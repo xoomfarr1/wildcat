@@ -1,0 +1,40 @@
+# GitHub Actions CI workflow
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --with dev
+
+      - name: Run lint
+        run: |
+          poetry run ruff check src/wildcat
+
+      - name: Run type check
+        run: |
+          poetry run mypy src/wildcat
+
+      - name: Run tests
+        run: |
+          poetry run pytest --cov=wildcat --cov-report=term-missing
