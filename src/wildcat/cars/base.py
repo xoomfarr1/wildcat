@@ -7,8 +7,8 @@ expose VIN handling, CAN identifier spaces, and PID decoding tables.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List, Optional
 
 
 @dataclass(frozen=True)
@@ -52,7 +52,7 @@ class CarModel(ABC):
         """Read all currently stored fault codes."""
 
     @abstractmethod
-    def get_live_data(self, keys: Optional[Iterable[str]] = None) -> List[LiveData]:
+    def get_live_data(self, keys: Iterable[str] | None = None) -> list[LiveData]:
         """Read live data from the vehicle."""
 
     @abstractmethod

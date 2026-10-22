@@ -7,12 +7,11 @@ the application layer to use.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from loguru import logger
 
-from wildcat.connectors.base import Connector, ConnectorError
 from wildcat.cars.base import CarModel
+from wildcat.connectors.base import Connector, ConnectorError
 
 
 @dataclass
@@ -21,7 +20,7 @@ class WildcatConfig:
 
     language: str = "EN"
     verbose: bool = False
-    log_file: Optional[str] = None
+    log_file: str | None = None
 
 
 class WildcatSession:
@@ -35,7 +34,7 @@ class WildcatSession:
         session.disconnect()
     """
 
-    def __init__(self, connector: Connector, car: CarModel, config: Optional[WildcatConfig] = None):
+    def __init__(self, connector: Connector, car: CarModel, config: WildcatConfig | None = None):
         self.connector = connector
         self.car = car
         self.config = config or WildcatConfig()
