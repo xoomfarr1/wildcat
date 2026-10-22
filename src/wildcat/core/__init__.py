@@ -1,5 +1,6 @@
 """Core package — session management, config, services."""
 
+from wildcat.core.exceptions import *
 from wildcat.core.ecu import ECUIdentifier, VehicleIdentification, parse_ecu_response
 from wildcat.core.session import WildcatSession
 from wildcat.core.uds import (
