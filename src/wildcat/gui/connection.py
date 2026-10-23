@@ -32,8 +32,8 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal
 
-from wildcat.cars import BMW, Ford, MercedesC300, VWAudi
 from wildcat.cars.base import CarModel
+from wildcat.cars.vin import CATALOG, decode_vin, find_vehicle_by_vin
 from wildcat.connectors._virtual import VirtualConnection
 from wildcat.connectors.elm327 import Elm327Connector
 from wildcat.connectors.j2534 import J2534Connector
@@ -51,20 +51,14 @@ CONNECTOR_LABELS: tuple[str, ...] = (
     "USB-CAN",
 )
 
-#: Friendly vehicle labels mapped to their car-model classes.
-VEHICLE_LABELS: tuple[str, ...] = (
-    "Mercedes C300 (2008)",
-    "BMW 3-Series (E90)",
-    "Ford Focus (ST170)",
-    "VW Golf (2010)",
-)
-
-_VEHICLE_FACTORIES: dict[str, type[CarModel]] = {
-    "Mercedes C300 (2008)": MercedesC300,
-    "BMW 3-Series (E90)": BMW,
-    "Ford Focus (ST170)": Ford,
-    "VW Golf (2010)": VWAudi,
-}
+#: Friendly vehicle labels (each car model's own name), in catalogue order.
+#: Sourced from :data:`wildcat.cars.vin.CATALOG` so the VIN resolver and the
+#: manual year/make/model selector always agree on which vehicles are supported.
+_LABEL_TO_CLASS: dict[str, type[CarModel]] = {}
+for _entry in CATALOG:
+    _name = _entry["class"]().name
+    _LABEL_TO_CLASS[_name] = _entry["class"]
+VEHICLE_LABELS: tuple[str, ...] = tuple(_LABEL_TO_CLASS)
 
 
 def _build_connector(label: str):
@@ -144,32 +138,67 @@ class ConnectionModel(QObject):
 
         Args:
             connector_label: A value from :data:`CONNECTOR_LABELS`.
-            vehicle_label: A value from :data:`VEHICLE_LABELS`.
+            vehicle_label: A value from :data:`VEHICLE_LABELS` (the car
+                model's own ``name``).
 
         Raises:
-            WildcatError: If the connector or vehicle label is unknown, or the
-                underlying session cannot open. The GUI catches this and shows
-                it via the :attr:`error` signal.
+            ValueError: If the vehicle label is unknown.
+            WildcatError: If the session cannot open. The GUI catches this and
+                shows it via the :attr:`error` signal.
         """
-        if connector_label not in CONNECTOR_LABELS:
-            raise ValueError(f"unknown connector: {connector_label!r}")
-        if vehicle_label not in _VEHICLE_FACTORIES:
-            raise ValueError(f"unknown vehicle: {vehicle_label!r}")
-
         try:
-            connector = _build_connector(connector_label)
-            car = _VEHICLE_FACTORIES[vehicle_label]()
-            self._session = WildcatSession(connector, car, WildcatConfig())
-            self._session.connect()
+            car = _LABEL_TO_CLASS[vehicle_label]()
+        except KeyError as exc:
+            raise ValueError(f"unknown vehicle: {vehicle_label!r}") from exc
+        try:
+            self._open_session(connector_label, car)
         except (WildcatError, Exception) as exc:
             self._session = None
             self.error.emit(f"Could not connect: {exc}")
             raise
 
+    def _open_session(self, connector_label: str, car: CarModel) -> None:
+        """Build and open a session for a connector + resolved car model."""
+        if connector_label not in CONNECTOR_LABELS:
+            raise ValueError(f"unknown connector: {connector_label!r}")
+        connector = _build_connector(connector_label)
+        self._session = WildcatSession(connector, car, WildcatConfig())
+        self._session.connect()
         self._connector_label = connector_label
-        self._vehicle_label = vehicle_label
+        self._vehicle_label = car.name
         self.status_changed.emit(f"Connected: {car.name} via {connector_label}")
         self.connected.emit(car)
+
+    def connect_by_vin(self, connector_label: str, vin: str) -> None:
+        """Decode a VIN and open a session for its resolved vehicle.
+
+        Args:
+            connector_label: A value from :data:`CONNECTOR_LABELS`.
+            vin: A 17-character VIN.
+
+        Raises:
+            WildcatError: If the VIN is invalid/unsupported or the session
+                cannot open.
+        """
+        car = find_vehicle_by_vin(vin)
+        if car is None:
+            decoded = decode_vin(vin)
+            if not decoded.valid:
+                msg = f"Invalid VIN: {decoded.reason}"
+            else:
+                make = decoded.make or "unknown"
+                msg = (
+                    f"VIN decodes to {make} {decoded.year}, which is not a "
+                    f"supported Wildcat vehicle"
+                )
+            self.error.emit(msg)
+            raise WildcatError(msg)
+        try:
+            self._open_session(connector_label, car)
+        except (WildcatError, Exception) as exc:
+            self._session = None
+            self.error.emit(f"Could not connect: {exc}")
+            raise
 
     def disconnect(self) -> None:
         """Close the current session, if any."""
