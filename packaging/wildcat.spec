@@ -1,8 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for Wildcat."""
 
+from pathlib import Path
+
 from PyInstaller.utils.hooks import collect_submodules
 
+REPO = Path.cwd()  # PyInstaller spec namespace lacks __file__; run from repo root
 block_cipher = None
 
 
@@ -17,8 +20,8 @@ def dependency_hook():
 hiddenimports = dependency_hook()
 
 a = Analysis(
-    ["src/wildcat/gui/app.py"],
-    pathex=["src"],
+    [str(REPO / "src" / "wildcat" / "gui" / "app.py")],
+    pathex=[str(REPO / "src")],
     binaries=[],
     datas=[],
     hiddenimports=hiddenimports,
