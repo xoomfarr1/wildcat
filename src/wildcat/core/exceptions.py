@@ -31,7 +31,14 @@ class ConfigurationError(WildcatError):
     """Configuration errors."""
 
 __all__ = [
-    "WildcatError", "ConnectorError", "ConnectorNotOpenError", "ProtocolError",
-    "CarError", "DiagnosticError", "ProgrammingError", "GUIError",
-    "SessionError", "ConfigurationError",
+    "CarError",
+    "ConfigurationError",
+    "ConnectorError",
+    "ConnectorNotOpenError",
+    "DiagnosticError",
+    "GUIError",
+    "ProgrammingError",
+    "ProtocolError",
+    "SessionError",
+    "WildcatError",
 ]

@@ -1,4 +1,11 @@
-from wildcat.core.exceptions import WildcatError, ConnectorError, ProtocolError, CarError, DiagnosticError, ProgrammingError
+from wildcat.core.exceptions import (
+    CarError,
+    ConnectorError,
+    DiagnosticError,
+    ProgrammingError,
+    ProtocolError,
+    WildcatError,
+)
 
 
 def test_hierarchy():
