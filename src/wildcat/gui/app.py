@@ -12,3 +12,7 @@ def run() -> int:
     win = MainWindow()
     win.show()
     return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(run())
