@@ -9,11 +9,22 @@ REPO = Path.cwd()  # PyInstaller spec namespace lacks __file__; run from repo ro
 block_cipher = None
 
 
+# PySide6: list the Qt modules the GUI links against explicitly and let
+# PyInstaller's official PySide6 hooks collect the Qt binaries/plugins/data.
+# Do NOT collect_submodules("PySide6") -- it breaks the frozen bundle with
+# "ModuleNotFoundError: No module named 'PySide6'" and is needlessly slow.
+QT_MODULES = [
+    "PySide6.QtCore",
+    "PySide6.QtGui",
+    "PySide6.QtWidgets",
+]
+
+
 def dependency_hook():
     return (
         collect_submodules("can")
         + collect_submodules("pydantic")
-        + collect_submodules("PySide6")
+        + QT_MODULES
     )
 
 
