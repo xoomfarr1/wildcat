@@ -2,28 +2,23 @@
 """PyInstaller spec for Wildcat -- standalone Windows GUI executable.
 
 Modeled on the proven mbtools spec: ONE standalone exe (onefile), the Qt
-modules listed explicitly, and the PySide6 C++ binaries + data forced into the
-bundle. Run from the repository root:
+modules listed explicitly, and PyInstaller's official PySide6 hooks collecting
+the Qt C++ binaries + data automatically. Run from the repository root:
 
     pyinstaller packaging\\wildcat.spec
 
-The result is packaging\\dist\\wildcat.exe (plus a small _internal folder only
-if onefile extraction is needed -- normally a single exe).
+The result is a single packaging\\dist\\wildcat.exe.
 """
 from pathlib import Path
 
-from PyInstaller.utils.hooks import (
-    collect_submodules,
-    collect_dynamic_libs,
-    collect_data,
-)
+from PyInstaller.utils.hooks import collect_submodules
 
 REPO = Path.cwd()  # PyInstaller spec namespace lacks __file__; run from repo root
 block_cipher = None
 
 # PySide6: the GUI imports QtWidgets, which transitively needs QtCore + QtGui.
-# List them explicitly and FORCE the Qt C++ binaries (.pyd/.dll) and data
-# (QtPlugin, translations, styles, image formats) into the bundle.
+# List them explicitly so PyInstaller's official PySide6 hooks fire and pull in
+# the Qt .pyd/.dll binaries, plugins, translations, styles and image formats.
 #
 # Do NOT collect_submodules("PySide6"): it is a known anti-pattern that both
 # grinds the build to a halt and breaks the frozen app with
@@ -33,13 +28,6 @@ QT_MODULES = [
     "PySide6.QtGui",
     "PySide6.QtWidgets",
 ]
-qt_binaries = collect_dynamic_libs("PySide6")
-qt_datas = (
-    collect_data("PySide6")
-    + collect_data("PySide6.QtCore")
-    + collect_data("PySide6.QtGui")
-    + collect_data("PySide6.QtWidgets")
-)
 
 hiddenimports = (
     collect_submodules("can")
@@ -50,8 +38,8 @@ hiddenimports = (
 a = Analysis(
     [str(REPO / "src" / "wildcat" / "gui" / "app.py")],
     pathex=[str(REPO / "src")],
-    binaries=qt_binaries,
-    datas=qt_datas,
+    binaries=[],
+    datas=[],
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
