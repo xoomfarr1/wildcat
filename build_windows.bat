@@ -10,5 +10,5 @@ echo("")
 python -m pip install --upgrade pip
 python -m pip install .[gui,dev]
 echo("")
-pyinstaller --onefolder --console=False packaging\wildcat.spec
+pyinstaller packaging\wildcat.spec
 pause
