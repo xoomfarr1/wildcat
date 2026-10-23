@@ -63,9 +63,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,                       # no UPX: never mangle the Qt binaries
-    console=True,                    # TEMP diagnostic: keep a console so startup
-                                     # crashes print their traceback. Flip back
-                                     # to False once the app runs.
+    console=False,                   # windowed app: no terminal window
     onefile=True,                    # single standalone exe (matches mbtools)
     runtime_tmpdir=None,
     argv_emulation=False,
