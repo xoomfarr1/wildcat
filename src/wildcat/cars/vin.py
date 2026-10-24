@@ -23,8 +23,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from wildcat.cars import BMW, Ford, MercedesC300, VWAudi
 from wildcat.cars.base import CarModel
+from wildcat.cars.vehicles import CATALOG
 
 #: 10th-character VIN positions decode to a year. Digits 0-9 cover 2000-2009 and
 #: the letters A-Y (I, O, Q never appear in a VIN) cover 2010-2030; the cycle
@@ -61,12 +61,9 @@ _PREFIX_MAKE: dict[str, str] = {
 
 #: Supported vehicles: how each (year, make, model) triplet maps to a car class.
 #: This is the catalogue the manual selector and the VIN resolver both read.
-CATALOG: list[dict] = [
-    {"class": MercedesC300, "year": 2008, "make": "Mercedes-Benz", "model": "C300"},
-    {"class": BMW, "year": 2006, "make": "BMW", "model": "3 Series"},
-    {"class": Ford, "year": 2004, "make": "Ford", "model": "Focus"},
-    {"class": VWAudi, "year": 2010, "make": "Volkswagen", "model": "Golf"},
-]
+#: The catalogue itself is authoritatively sourced from NHTSA vPIC and lives in
+#: :mod:`wildcat.cars.vehicles` (12,118 entries, 31 makes, 2000-2024). Swapping it
+#: requires no change to the selector logic below, which all read this list.
 
 
 @dataclass(frozen=True)
@@ -138,15 +135,25 @@ def find_vehicle(year: int, make: str, model: str) -> CarModel | None:
 def find_vehicle_by_vin(vin: str) -> CarModel | None:
     """Resolve a VIN to a car model instance, if supported.
 
-    Matches the decoded make against the catalogue; if the make matches a
-    supported entry it returns that car. (The catalogue currently has one
-    Mercedes model, so any Mercedes VIN resolves to the C300 platform.)
+    The decoded make (and, when the 10th character yields a year, the model
+    year) are matched against the catalogue. A VIN for a recognised but
+    unmodelled make (e.g. Chevrolet) resolves to the read-only
+    :class:`~wildcat.cars.generic_obd2.GenericOBD2` stub. Makes with no Wildcat
+    catalogue entry return ``None`` so the UI can tell the user the vehicle
+    isn't supported yet.
     """
     decoded = decode_vin(vin)
     if not decoded.valid or decoded.make is None:
         return None
+    make = decoded.make
+    year = decoded.year
+    # Prefer an entry whose model year matches the VIN; fall back to any year
+    # for the make (year codes can be ambiguous within the vPIC span).
     for entry in CATALOG:
-        if entry["make"] == decoded.make:
+        if entry["make"] == make and (year is None or entry["year"] == year):
+            return entry["class"]()
+    for entry in CATALOG:
+        if entry["make"] == make:
             return entry["class"]()
     return None
 
@@ -164,14 +171,21 @@ def vehicle_triplet(vin: str) -> tuple[int, str, str] | None:
     """Decode a VIN and return the ``(year, make, model)`` it resolves to.
 
     Returns ``None`` if the VIN is invalid, or decodes to a make with no
-    installed Wildcat car model. The GUI uses this to pre-fill the
+    Wildcat catalogue entry. When the VIN yields a model year, an entry for that
+    year is preferred (so a 2008 Mercedes VIN pre-fills 2008 / C-Class rather
+    than a different model year). The GUI uses this to pre-fill the
     year/make/model cascade when a VIN is entered.
     """
     decoded = decode_vin(vin)
     if not decoded.valid or decoded.make is None:
         return None
+    make = decoded.make
+    year = decoded.year
     for entry in CATALOG:
-        if entry["make"] == decoded.make:
+        if entry["make"] == make and (year is None or entry["year"] == year):
+            return (entry["year"], entry["make"], entry["model"])
+    for entry in CATALOG:
+        if entry["make"] == make:
             return (entry["year"], entry["make"], entry["model"])
     return None
 

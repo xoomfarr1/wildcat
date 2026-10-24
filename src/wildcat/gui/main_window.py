@@ -122,9 +122,9 @@ class MainWindow(QMainWindow):
     def _populate_cascade(self) -> None:
         """Fill the Year/Make/Model combos and default to a supported car.
 
-        Defaults to the first catalogue entry (currently the 2008 Mercedes
-        C300) so a fresh window is ready to connect to your car without any
-        extra clicks.
+        Defaults to a 2008 Mercedes C-Class (the MercedesC300 platform) so a
+        fresh window is ready to connect to a typical customer without extra
+        clicks; falls back to the first catalogue entry if absent.
         """
         years = vin.list_years()
         self._year_combo.blockSignals(True)
@@ -132,7 +132,20 @@ class MainWindow(QMainWindow):
         self._year_combo.addItems([str(y) for y in years])
         self._year_combo.blockSignals(False)
 
-        first = vin.CATALOG[0]
+        # Default to the user's car when possible: 2008 Mercedes C-Class
+        # (resolves to the MercedesC300 platform) so a fresh window is ready to
+        # connect without extra clicks; fall back to the first catalogue entry
+        # if that triplet is absent.
+        first = next(
+            (
+                e
+                for e in vin.CATALOG
+                if e["make"] == "Mercedes-Benz"
+                and e["year"] == 2008
+                and e["model"] == "C-Class"
+            ),
+            vin.CATALOG[0],
+        )
         # _set_vehicle drives the whole cascade under blocked signals so the
         # population is deterministic (combobox auto-selection does not fire
         # currentIndexChanged, which previously left Model empty).

@@ -55,9 +55,16 @@ CONNECTOR_LABELS: tuple[str, ...] = (
 #: Sourced from :data:`wildcat.cars.vin.CATALOG` so the VIN resolver and the
 #: manual year/make/model selector always agree on which vehicles are supported.
 _LABEL_TO_CLASS: dict[str, type[CarModel]] = {}
+_seen_classes: set[type[CarModel]] = set()
 for _entry in CATALOG:
-    _name = _entry["class"]().name
-    _LABEL_TO_CLASS[_name] = _entry["class"]
+    # Many catalogue rows share a car class (e.g. every Mercedes-Benz row maps
+    # to MercedesC300); instantiate each class once, not once per row, so the
+    # ~12k-row catalogue does not build 12k car objects on import.
+    _cls = _entry["class"]
+    if _cls in _seen_classes:
+        continue
+    _seen_classes.add(_cls)
+    _LABEL_TO_CLASS[_cls().name] = _cls
 VEHICLE_LABELS: tuple[str, ...] = tuple(_LABEL_TO_CLASS)
 
 
