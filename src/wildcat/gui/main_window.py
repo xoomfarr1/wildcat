@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
 
 from wildcat.cars import vin
 from wildcat.gui.connection import ConnectionModel
+from wildcat.gui.sparkle import GlassPanel
 from wildcat.gui.theme import GLASS_STYLE
 from wildcat.gui.views.diagnostics_view import DiagnosticsView
 from wildcat.gui.views.live_data_view import LiveDataView
@@ -93,6 +94,9 @@ class MainWindow(QMainWindow):
 
         self._populate_cascade()
 
+        # Frosted-glass bar with an animated sparkle overlay.
+        self._bar_panel = GlassPanel(children_layout=bar)
+
         # --- tabs -----------------------------------------------------------
         tabs = QTabWidget()
         tabs.addTab(DiagnosticsView(self.connection), "Diagnostics")
@@ -104,7 +108,7 @@ class MainWindow(QMainWindow):
 
         container = QWidget()
         layout = QVBoxLayout(container)
-        layout.addLayout(bar)
+        layout.addWidget(self._bar_panel)
         layout.addWidget(tabs)
         btn_row = QHBoxLayout()
         btn_row.addStretch()

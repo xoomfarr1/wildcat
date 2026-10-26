@@ -36,7 +36,19 @@ QPushButton {
     padding: 8px 16px;
 }
 QPushButton:hover {
-    background-color: rgba(110,110,170,0.85);
+    background-color: rgba(120,120,185,0.95);
+    border: 1px solid rgba(255,255,255,0.5);
+}
+QComboBox {
+    background-color: rgba(24,24,39,0.9);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 4px 8px;
+    color: #e0e0e0;
+}
+QComboBox:hover {
+    border-color: rgba(255,255,255,0.35);
+    background-color: rgba(28,28,44,0.95);
 }
 QLabel {
     color: #e0e0e0;
