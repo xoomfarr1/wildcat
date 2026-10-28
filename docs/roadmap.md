@@ -43,6 +43,15 @@
 - [ ] PyInstaller Windows .exe
 - [ ] Documentation + release
 
+## Dev tooling
+
+- **odxtools** (dev-only, optional): reverse-engineer Mercedes/ODX diagnostic sessions.
+  - `odxtools snoop <pdx> --can <interface>` — live-decode a diagnostic session
+  - `odxtools decode <pdx> <hex>` — decode raw hex to named parameters
+  - `odxtools list <pdx> --services` — enumerate services for an ECU
+  - Use a Mercedes PDX to inform `cars/mercedes_c300.py` service definitions.
+  - Not a production dependency; `core/uds.py` stays hand-rolled until a PDX is sourced.
+
 ## MVP Scope (first release)
 
 A working first release should include:

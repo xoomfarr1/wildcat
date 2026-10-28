@@ -19,6 +19,7 @@ pytest = "^8.2"
 pytest-cov = "^5.0"
 ruff = "^0.4"
 mypy = "^1.8"
+odxtools = "^11.7"  # dev-only: reverse-engineer Mercedes/ODX diagnostic sessions (snoop/decode); not a production dep
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
