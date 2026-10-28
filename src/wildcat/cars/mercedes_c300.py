@@ -8,11 +8,9 @@ driver drives.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import ClassVar
 
 from wildcat.cars.base import DTC, CarModel, LiveData
-from wildcat.cars.spaces import decode_signal
 
 
 class MercedesC300(CarModel):
@@ -81,16 +79,6 @@ class MercedesC300(CarModel):
         self._ecu_id = self._POWERTRAIN_ECU_ID
         # Fault codes currently stored in the vehicle's offline table.
         self._stored_dtc: list[DTC] = []
-        for _space in self.DTC_SPACES.values():
-            for _dtc in _space:
-                self._stored_dtc.append(
-                    DTC(
-                        code=_dtc["code"],
-                        description=_dtc["description"],
-                        severity=_dtc["severity"],
-                        is_temporary=_dtc.get("is_temporary", False),
-                    )
-                )
 
     @property
     def name(self) -> str:
@@ -108,28 +96,14 @@ class MercedesC300(CarModel):
         """Read all currently stored fault codes."""
         return list(self._stored_dtc)
 
-    def get_live_data(self, keys: Iterable[str] | None = None) -> list[LiveData]:
+    def get_live_data(self, keys=None) -> list[LiveData]:
         """Read live data from the vehicle.
 
-        Decodes every configured signal with :func:`spaces.decode_signal` and
-        returns a ``LiveData`` record per signal. ``keys`` optionally
-        restricts the result to the given signal names.
-
-        Args:
-            keys: Optional list of signal names to include.
-
-        Returns:
-            Decoded live data records.
+        No fabricated values: returns an empty list until a real connector
+        (e.g. ELM327 over OBD-II) provides data. Signal definitions live in
+        :attr:`LIVE_DATA_SPACES` for protocol use.
         """
-        out: list[LiveData] = []
-        for signals in self.LIVE_DATA_SPACES.values():
-            for sig in signals:
-                if keys and sig["name"] not in keys:
-                    continue
-                raw = sig.get("sample", 0)
-                value = round(decode_signal(sig, raw), 2)
-                out.append(LiveData(name=sig["name"], value=value, unit=sig.get("unit", "")))
-        return out
+        return []
 
     def clear_dtc(self) -> None:
         """Clear all currently stored fault codes."""
@@ -164,7 +138,7 @@ class MercedesC300(CarModel):
             raise ValueError("SBC seed request (key ID) must be exactly 4 bytes")
         # Real driver: forward the seed request over the PT3G/VCI and return
         # the seed from the ECU response.
-        return bytes((0xA5, 0x5A, 0xA5, 0x5A))
+        raise NotImplementedError("no fabricated seed/key; requires a real connector")
 
     def send_key(self, key: bytes) -> bytes:
         """Send a seed response to the vehicle (SBC SID 0x29).
@@ -184,4 +158,4 @@ class MercedesC300(CarModel):
         if len(key) != 4:
             raise ValueError("SBC seed response must be exactly 4 bytes")
         # Real driver: send the session key back over the PT3G/VCI.
-        return bytes((0x01, 0x02, 0x03, 0x04))
+        raise NotImplementedError("no fabricated seed/key; requires a real connector")

@@ -12,6 +12,8 @@ from loguru import logger
 
 from wildcat.cars.base import CarModel
 from wildcat.connectors.base import Connector, ConnectorError
+from wildcat.connectors.elm327 import Elm327Connector
+from wildcat.diagnostics import obd2 as _obd2
 
 
 @dataclass
@@ -60,15 +62,22 @@ class WildcatSession:
         """Read fault codes from the vehicle."""
         if not self._connected:
             raise ConnectorError("Session not connected")
+        if isinstance(self.connector, Elm327Connector):
+            return _obd2.read_dtcs(self.connector)
         return self.car.get_dtc_reader()
 
     def read_live_data(self, keys=None):
         """Read live data from the vehicle."""
         if not self._connected:
             raise ConnectorError("Session not connected")
+        if isinstance(self.connector, Elm327Connector):
+            return _obd2.read_live_data(self.connector)
         return self.car.get_live_data(keys)
 
     def clear_dtc(self) -> None:
         if not self._connected:
             raise ConnectorError("Session not connected")
+        if isinstance(self.connector, Elm327Connector):
+            _obd2.clear_dtcs(self.connector)
+            return
         self.car.clear_dtc()

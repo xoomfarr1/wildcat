@@ -7,7 +7,7 @@ from wildcat.diagnostics import (
 def test_diagnostics_dtc():
     car = MercedesC300()
     d = Diagnostics(car)
-    assert d.read_dtc()
+    assert d.read_dtc() == []
     d.clear_dtc()
     assert d.read_dtc() == []
 
@@ -16,13 +16,13 @@ def test_live_data():
     car = MercedesC300()
     d = Diagnostics(car)
     data = d.read_live_data()
-    assert data
+    assert data == []
 
 
 def test_freeze_frame():
     car = MercedesC300()
     ff = Diagnostics(car).read_freeze_frame()
-    assert ff.data
+    assert ff.data == []
 
 
 def test_supplier():

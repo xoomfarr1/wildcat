@@ -284,6 +284,9 @@ class ConnectionModel(QObject):
             raise WildcatError("Not connected")
         if not car.security_access():
             raise WildcatError(f"{car.name} does not require security access")
-        seed = car.send_seed(key_id)
-        key = car.send_key(seed)
+        try:
+            seed = car.send_seed(key_id)
+            key = car.send_key(seed)
+        except NotImplementedError as exc:
+            raise WildcatError(f"Security access requires a real connector: {exc}") from exc
         return seed, key

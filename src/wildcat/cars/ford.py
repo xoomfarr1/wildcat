@@ -8,11 +8,9 @@ in-memory.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import ClassVar
 
 from wildcat.cars.base import DTC, CarModel, LiveData
-from wildcat.cars.spaces import decode_signal
 
 
 class Ford(CarModel):
@@ -67,16 +65,6 @@ class Ford(CarModel):
         self._language = "EN"
         self._ecu_id = self._POWERTRAIN_ECU_ID
         self._stored_dtc: list[DTC] = []
-        for _space in self.DTC_SPACES.values():
-            for _dtc in _space:
-                self._stored_dtc.append(
-                    DTC(
-                        code=_dtc["code"],
-                        description=_dtc["description"],
-                        severity=_dtc["severity"],
-                        is_temporary=_dtc.get("is_temporary", False),
-                    )
-                )
 
     @property
     def name(self) -> str:
@@ -94,28 +82,14 @@ class Ford(CarModel):
         """Read all currently stored fault codes."""
         return list(self._stored_dtc)
 
-    def get_live_data(self, keys: Iterable[str] | None = None) -> list[LiveData]:
+    def get_live_data(self, keys=None) -> list[LiveData]:
         """Read live data from the vehicle.
 
-        Decodes every configured signal with :func:`spaces.decode_signal` and
-        returns a ``LiveData`` record per signal. ``keys`` optionally
-        restricts the result to the given signal names.
-
-        Args:
-            keys: Optional list of signal names to include.
-
-        Returns:
-            Decoded live data records.
+        No fabricated values: returns an empty list until a real connector
+        (e.g. ELM327 over OBD-II) provides data. Signal definitions live in
+        :attr:`LIVE_DATA_SPACES` for protocol use.
         """
-        out: list[LiveData] = []
-        for space_name, signals in self.LIVE_DATA_SPACES.items():
-            if keys and space_name not in keys:
-                continue
-            for sig in signals:
-                raw = sig.get("sample", 0)
-                value = round(decode_signal(sig, raw), 2)
-                out.append(LiveData(name=sig["name"], value=value, unit=sig.get("unit", "")))
-        return out
+        return []
 
     def clear_dtc(self) -> None:
         """Clear all currently stored fault codes."""

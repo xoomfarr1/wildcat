@@ -19,8 +19,9 @@ def test_live_data_view_populates_on_connect():
     conn.connect("Virtual (simulated)", "Mercedes C300 (2008)")
 
     signals = conn.read_live_data()
+    # No fabricated data: a fresh connection yields no live signals.
+    assert view.table.rowCount() == 0
     assert view.table.rowCount() == len(signals)
-    assert view.table.item(0, 0).text() == "EngineRPM"
     assert view.status.text() == f"{len(signals)} signal(s)"
 
     conn.disconnect()

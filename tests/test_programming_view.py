@@ -23,9 +23,10 @@ def test_programming_view_ecu_info_and_security_access():
 
     view.request_button.click()
 
-    assert view.seed_label.text()  # non-empty seed
-    assert view.key_label.text()  # non-empty key
-    assert view.status.text() == "Unlocked"
+    # No fabricated seed/key: a virtual session cannot complete security access.
+    assert view.seed_label.text() == ""
+    assert view.key_label.text() == ""
+    assert view.status.text() != "Unlocked"
 
     connection.disconnect()
     assert view.status.text() == "Not connected"
