@@ -36,7 +36,6 @@ from wildcat.gui.theme import GLASS_STYLE
 from wildcat.gui.views.diagnostics_view import DiagnosticsView
 from wildcat.gui.views.live_data_view import LiveDataView
 from wildcat.gui.views.programming_view import ProgrammingView
-from wildcat.gui.web_launcher import open_web_ui
 
 
 class MainWindow(QMainWindow):
@@ -54,6 +53,9 @@ class MainWindow(QMainWindow):
         # --- connection bar -------------------------------------------------
         self._conn_combo = QComboBox()
         self._conn_combo.addItems(self.connection.available_connectors())
+
+        detect_btn = QPushButton("Detect Cables")
+        detect_btn.clicked.connect(self._detect_cables)
 
         self._vin_edit = QLineEdit()
         self._vin_edit.setPlaceholderText("VIN (auto-decode)")
@@ -77,6 +79,7 @@ class MainWindow(QMainWindow):
         bar = QHBoxLayout()
         bar.addWidget(QLabel("Connector:"))
         bar.addWidget(self._conn_combo, 2)
+        bar.addWidget(detect_btn)
         bar.addSpacing(12)
         bar.addWidget(QLabel("VIN:"))
         bar.addWidget(self._vin_edit, 2)
@@ -103,17 +106,10 @@ class MainWindow(QMainWindow):
         tabs.addTab(LiveDataView(self.connection), "Live Data")
         tabs.addTab(ProgrammingView(self.connection), "Programming")
 
-        open_btn = QPushButton("Open Web UI")
-        open_btn.clicked.connect(lambda: open_web_ui())
-
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.addWidget(self._bar_panel)
         layout.addWidget(tabs)
-        btn_row = QHBoxLayout()
-        btn_row.addStretch()
-        btn_row.addWidget(open_btn)
-        layout.addLayout(btn_row)
         self.setCentralWidget(container)
 
     # --------------------------------------------------- vehicle selection --- #
@@ -226,6 +222,22 @@ class MainWindow(QMainWindow):
         self._set_vehicle(year, make, model)
         car = vin.find_vehicle(year, make, model)
         self.status_label.setText(f"VIN decoded: {car.name if car else make}")
+
+    def _detect_cables(self) -> None:
+        """Auto-detect connected serial adapters and select a connector."""
+        from wildcat.connectors.detect import detect_cables
+
+        cables = detect_cables()
+        if not cables:
+            self.status_label.setText("No serial adapters detected")
+            return
+        # Prefer the first detected cable's suggested connector type.
+        first = cables[0]
+        idx = self._conn_combo.findText(first.suggested_connector)
+        if idx >= 0:
+            self._conn_combo.setCurrentIndex(idx)
+        summary = "; ".join(f"{c.port} ({c.description})" for c in cables)
+        self.status_label.setText(f"Detected {len(cables)} cable(s): {summary}")
 
     # ------------------------------------------------------------------ events
     def _toggle_connection(self) -> None:
