@@ -20,6 +20,7 @@ from wildcat.connectors.base import Connector, ConnectorError, ConnectorNotOpenE
 from wildcat.connectors.elm327 import Elm327Connector
 from wildcat.connectors.j2534 import J2534Connector
 from wildcat.connectors.pt3g import PT3GConnector
+from wildcat.connectors.serial import SerialConnector
 from wildcat.connectors.usbcan import UsbCANConnector
 
 VIRT = {"virtual": True}
@@ -240,7 +241,7 @@ class TestUsbCANNativeOpenFailure:
 
 class TestConnectorContract:
     def test_all_implement_the_base(self):
-        for conn_cls in (J2534Connector, PT3GConnector, Elm327Connector, UsbCANConnector):
+        for conn_cls in (J2534Connector, PT3GConnector, Elm327Connector, UsbCANConnector, SerialConnector):
             assert issubclass(conn_cls, Connector)
             for method in ("open", "close", "send", "recv", "is_open", "reset"):
                 assert callable(getattr(conn_cls, method))

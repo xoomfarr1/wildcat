@@ -38,6 +38,7 @@ from wildcat.connectors._virtual import VirtualConnection
 from wildcat.connectors.elm327 import Elm327Connector
 from wildcat.connectors.j2534 import J2534Connector
 from wildcat.connectors.pt3g import PT3GConnector
+from wildcat.connectors.serial import SerialConnector
 from wildcat.connectors.usbcan import UsbCANConnector
 from wildcat.core.exceptions import WildcatError
 from wildcat.core.session import WildcatConfig, WildcatSession
@@ -49,6 +50,7 @@ CONNECTOR_LABELS: tuple[str, ...] = (
     "J2534 Pass-thru",
     "ELM327 OBD-II",
     "USB-CAN",
+    "K-Line (BMW/VAG)",
 )
 
 #: Friendly vehicle labels (each car model's own name), in catalogue order.
@@ -90,6 +92,8 @@ def _build_connector(label: str):
         return Elm327Connector(port="VIRTUAL", virtual=True)
     if label == "USB-CAN":
         return UsbCANConnector(virtual=True)
+    if label == "K-Line (BMW/VAG)":
+        return SerialConnector(port="VIRTUAL", virtual=True)
     raise ValueError(f"unknown connector: {label!r}")
 
 

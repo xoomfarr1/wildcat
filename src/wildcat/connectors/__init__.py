@@ -4,6 +4,7 @@ from wildcat.connectors.base import Connector, ConnectorError
 from wildcat.connectors.elm327 import Elm327Connector
 from wildcat.connectors.j2534 import J2534Connector
 from wildcat.connectors.pt3g import PT3GConnector
+from wildcat.connectors.serial import SerialConnector
 from wildcat.connectors.usbcan import UsbCANConnector
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "Elm327Connector",
     "J2534Connector",
     "PT3GConnector",
+    "SerialConnector",
     "UsbCANConnector",
 ]

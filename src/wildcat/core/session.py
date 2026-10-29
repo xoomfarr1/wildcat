@@ -13,7 +13,9 @@ from loguru import logger
 from wildcat.cars.base import CarModel
 from wildcat.connectors.base import Connector, ConnectorError
 from wildcat.connectors.elm327 import Elm327Connector
+from wildcat.connectors.serial import SerialConnector
 from wildcat.diagnostics import obd2 as _obd2
+from wildcat.protocol.kline import KLineSession as _KLineSession
 
 
 @dataclass
@@ -41,17 +43,21 @@ class WildcatSession:
         self.car = car
         self.config = config or WildcatConfig()
         self._connected = False
+        self._kline: _KLineSession | None = None
 
     def connect(self) -> None:
         """Open the hardware connection."""
         self.connector.open()
         self._connected = True
+        if isinstance(self.connector, SerialConnector):
+            self._kline = _KLineSession(self.connector)
         logger.info(f"Connected: {self.car.name} via {self.connector.__class__.__name__}")
 
     def disconnect(self) -> None:
         """Close the hardware connection."""
         self.connector.close()
         self._connected = False
+        self._kline = None
         logger.info("Disconnected")
 
     @property
@@ -64,6 +70,10 @@ class WildcatSession:
             raise ConnectorError("Session not connected")
         if isinstance(self.connector, Elm327Connector):
             return _obd2.read_dtcs(self.connector)
+        if isinstance(self.connector, SerialConnector):
+            if self._kline is None:
+                self._kline = _KLineSession(self.connector)
+            return self._kline.read_dtcs()
         return self.car.get_dtc_reader()
 
     def read_live_data(self, keys=None):
@@ -72,6 +82,10 @@ class WildcatSession:
             raise ConnectorError("Session not connected")
         if isinstance(self.connector, Elm327Connector):
             return _obd2.read_live_data(self.connector)
+        if isinstance(self.connector, SerialConnector):
+            if self._kline is None:
+                self._kline = _KLineSession(self.connector)
+            return self._kline.read_live_data()
         return self.car.get_live_data(keys)
 
     def clear_dtc(self) -> None:
@@ -79,5 +93,10 @@ class WildcatSession:
             raise ConnectorError("Session not connected")
         if isinstance(self.connector, Elm327Connector):
             _obd2.clear_dtcs(self.connector)
+            return
+        if isinstance(self.connector, SerialConnector):
+            if self._kline is None:
+                self._kline = _KLineSession(self.connector)
+            self._kline.clear_dtcs()
             return
         self.car.clear_dtc()
