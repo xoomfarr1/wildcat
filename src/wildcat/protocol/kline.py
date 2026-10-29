@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import time
 
+from loguru import logger
+
 from wildcat.cars.base import DTC, LiveData
 from wildcat.connectors.base import Connector, ConnectorError
 
@@ -54,11 +56,16 @@ def fast_init(connector: Connector, timeout: float = 2.0) -> bool:
         except Exception:  # noqa: BLE001, S110
             pass
         connector.send(bytes([0xC1]))
+        logger.debug("K-line fast init: sent break + 0xC1")
         resp = _read_bytes(connector, 3, timeout)
+        logger.debug(f"K-line fast init: response = {resp.hex()}")
     except (OSError, ConnectorError):
+        logger.debug("K-line fast init: exception")
         return False
     # ECU replies with sync 0x55 + 2 key bytes
-    return len(resp) >= 1 and resp[0] == 0x55
+    ok = len(resp) >= 1 and resp[0] == 0x55
+    logger.debug(f"K-line fast init: {'OK' if ok else 'FAIL'} (sync={resp[0:1].hex()})")
+    return ok
 
 
 def slow_init(connector: Connector, timeout: float = 2.0) -> bool:
@@ -79,11 +86,16 @@ def slow_init(connector: Connector, timeout: float = 2.0) -> bool:
                 connector._ser.setRTS(False)
         except Exception:  # noqa: BLE001, S110
             pass
+        logger.debug("K-line slow init: sent 0x33 @ 5 baud")
         resp = _read_bytes(connector, 4, timeout)
+        logger.debug(f"K-line slow init: response = {resp.hex()}")
     except (OSError, ConnectorError):
+        logger.debug("K-line slow init: exception")
         return False
     # ECU replies with 0x55 0x08 0x08 0xF7
-    return len(resp) >= 1 and resp[0] == 0x55
+    ok = len(resp) >= 1 and resp[0] == 0x55
+    logger.debug(f"K-line slow init: {'OK' if ok else 'FAIL'}")
+    return ok
 
 
 class KLineSession:
@@ -116,8 +128,11 @@ class KLineSession:
         # virtual/echo mode there is no ECU to answer, so return empty.
         try:
             self.connector.send(bytes([0x18, 0x00, 0xFF]))
+            logger.debug("K-line: sent readDTC 0x18 0x00 0xFF")
             resp = _read_bytes(self.connector, 64, 1.0)
+            logger.debug(f"K-line: readDTC response = {resp.hex()}")
         except (OSError, ConnectorError):
+            logger.debug("K-line: readDTC exception")
             return []
         if not resp or resp[0] != 0x58:  # 0x18 + 0x40
             return []
