@@ -76,24 +76,28 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("Not connected")
         self.status_label.setObjectName("hint")
 
-        bar = QHBoxLayout()
-        bar.addWidget(QLabel("Connector:"))
-        bar.addWidget(self._conn_combo, 2)
-        bar.addWidget(detect_btn)
-        bar.addSpacing(12)
-        bar.addWidget(QLabel("VIN:"))
-        bar.addWidget(self._vin_edit, 2)
-        bar.addWidget(decode_btn)
-        bar.addSpacing(12)
-        bar.addWidget(QLabel("Year:"))
-        bar.addWidget(self._year_combo, 1)
-        bar.addWidget(QLabel("Make:"))
-        bar.addWidget(self._make_combo, 1)
-        bar.addWidget(QLabel("Model:"))
-        bar.addWidget(self._model_combo, 1)
-        bar.addWidget(self.connect_btn)
-        bar.addSpacing(16)
-        bar.addWidget(self.status_label)
+        bar = QVBoxLayout()
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Connector:"))
+        row1.addWidget(self._conn_combo, 2)
+        row1.addWidget(detect_btn)
+        row1.addSpacing(12)
+        row1.addWidget(QLabel("VIN:"))
+        row1.addWidget(self._vin_edit, 2)
+        row1.addWidget(decode_btn)
+        row1.addSpacing(12)
+        row1.addWidget(self.connect_btn)
+        row1.addSpacing(16)
+        row1.addWidget(self.status_label)
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Year:"))
+        row2.addWidget(self._year_combo, 1)
+        row2.addWidget(QLabel("Make:"))
+        row2.addWidget(self._make_combo, 1)
+        row2.addWidget(QLabel("Model:"))
+        row2.addWidget(self._model_combo, 1)
+        bar.addLayout(row1)
+        bar.addLayout(row2)
 
         self._populate_cascade()
 
@@ -267,6 +271,19 @@ class MainWindow(QMainWindow):
                     return
                 self.connection.connect(connector, car.name)
             self.connect_btn.setText("Disconnect")
+            # Auto-detect VIN from the vehicle when none was entered.
+            if not vin_text:
+                try:
+                    from wildcat.diagnostics import obd2 as _obd2
+                    conn = getattr(self.connection, "connector", None)
+                    if conn is not None:
+                        detected = _obd2.read_vin(conn)
+                        if detected:
+                            self._vin_edit.setText(detected)
+                            self._on_decode_vin()
+                            self.status_label.setText(f"Auto-detected VIN: {detected}")
+                except Exception:  # noqa: BLE001,S110
+                    pass
         except Exception:  # noqa: BLE001,S110 - error signal shows the dialog
             pass
 
