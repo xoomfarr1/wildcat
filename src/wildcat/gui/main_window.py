@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QTabWidget,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -114,6 +115,12 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(container)
         layout.addWidget(self._bar_panel)
         layout.addWidget(tabs)
+        self._log = QTextEdit()
+        self._log.setReadOnly(True)
+        self._log.setMaximumHeight(120)
+        self._log.setObjectName("hint")
+        layout.addWidget(QLabel("Connection log:"))
+        layout.addWidget(self._log)
         self.setCentralWidget(container)
 
     # --------------------------------------------------- vehicle selection --- #
@@ -242,6 +249,17 @@ class MainWindow(QMainWindow):
             self._conn_combo.setCurrentIndex(idx)
         summary = "; ".join(f"{c.port} ({c.description})" for c in cables)
         self.status_label.setText(f"Detected {len(cables)} cable(s): {summary}")
+        self.log(f"Detected {len(cables)} cable(s): {summary}")
+
+    def log(self, msg: str) -> None:
+        from datetime import datetime
+
+        ts = datetime.now().strftime("%H:%M:%S")
+        self._log.append(f"[{ts}] {msg}")
+
+    def _purge_cables(self) -> None:
+        self.log("Purged disconnected cable state")
+        self.status_label.setText("Not connected")
 
     # ------------------------------------------------------------------ events
     def _toggle_connection(self) -> None:
@@ -249,6 +267,7 @@ class MainWindow(QMainWindow):
         if self.connection.is_connected:
             self.connection.disconnect()
             self.connect_btn.setText("Connect")
+            self._purge_cables()
             return
         connector = self._conn_combo.currentText()
         vin_text = self._vin_edit.text().strip().upper()
@@ -271,6 +290,7 @@ class MainWindow(QMainWindow):
                     return
                 self.connection.connect(connector, car.name)
             self.connect_btn.setText("Disconnect")
+            self.log(f"Connected via {connector}")
             # Auto-detect VIN from the vehicle when none was entered.
             if not vin_text:
                 try:
