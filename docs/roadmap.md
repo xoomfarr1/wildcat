@@ -62,3 +62,15 @@ A working first release should include:
 5. Basic desktop GUI
 
 Everything else is phase 2+.
+
+## Xentry-Portal integration (2026-10-28)
+Implemented from https://github.com/Xentry-Portal/mercedes-xentry-diagnosis-portal:
+- `protocol/uds_services.py`: UDS service-id map, session types, ReadDTCInformation sub-functions, TesterPresent constants, DTC status-bit decoder (adapted from Caring Caribou).
+- `protocol/kline.py`: `KLineSession.tester_present()` (0x3E keepalive) and `KLineSession.read_dtcs_uds()` (UDS 0x19 0x02 ReadDTCInformation decoder).
+
+Deferred (need CAN hardware / Rust toolchain / larger refactor):
+- ISO-TP segmented transport (`iso15765_2.py`) — needs raw CAN frames; not applicable to serial ELM327/K-line.
+- UDS discovery / ECU auto-scan (`caringcaribou_uds.py`, `ecu_scanner.py`) — CAN arbitration-id scanning.
+- Mercedes CBF diagnostic-container parsing (`rust/cbf_parser.rs`, `cbf_dtc.rs`) — requires Rust build; would give MercedesC300 real DTC descriptions.
+- J2534 passthru hardware abstraction (`rust/passthru_api.rs`) — only if a J2534 adapter is acquired.
+- `transport_interface.py` generalization — future refactor when CAN transport lands.

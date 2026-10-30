@@ -120,6 +120,45 @@ class KLineSession:
         ok = fast_init(self.connector) if fast else slow_init(self.connector)
         self.established = ok
 
+    def tester_present(self, response_required: bool = False) -> bool:
+        """Send TesterPresent (0x3E) to keep the ECU session alive."""
+        sub = 0x00 if response_required else 0x80
+        try:
+            self.connector.send(bytes([0x3E, sub]))
+            logger.debug(f"K-line: sent TesterPresent 0x3E 0x{sub:02X}")
+            if response_required:
+                resp = _read_bytes(self.connector, 2, 0.5)
+                logger.debug(f"K-line: TesterPresent response = {resp.hex()}")
+                return len(resp) >= 1 and (resp[0] == 0x7E)
+            return True
+        except (OSError, ConnectorError):
+            logger.debug("K-line: TesterPresent exception")
+            return False
+
+    def read_dtcs_uds(self, status_mask: int = 0xFF) -> list[DTC]:
+        """Read DTCs via UDS ReadDTCInformation (0x19 0x02)."""
+        out: list[DTC] = []
+        try:
+            self.connector.send(bytes([0x19, 0x02, status_mask]))
+            logger.debug(f"K-line: sent ReadDTCInformation 0x19 0x02 0x{status_mask:02X}")
+            resp = _read_bytes(self.connector, 256, 1.0)
+            logger.debug(f"K-line: ReadDTCInformation response = {resp.hex()}")
+        except (OSError, ConnectorError):
+            logger.debug("K-line: ReadDTCInformation exception")
+            return out
+        # positive response: 0x59 0x02 <statusAvailabilityMask> <DTC(3 bytes)><status>...
+        if not resp or resp[0] != 0x59:
+            return out
+        # skip 0x59 0x02 statusAvailabilityMask (3 bytes)
+        i = 3
+        while i + 3 < len(resp):
+            dtc_word = (resp[i] << 16) | (resp[i + 1] << 8) | resp[i + 2]
+            status = resp[i + 3]
+            i += 4
+            type_char = "PCBU"[(dtc_word >> 22) & 0x03]
+            code = f"{type_char}{(dtc_word & 0x00FFFF):04X}"
+            out.append(DTC(code=code, description=f"status=0x{status:02X}", severity="Warning", is_temporary=False))
+        return out
     def read_dtcs(self) -> list[DTC]:
         if not self.established:
             return []
