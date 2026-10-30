@@ -16,6 +16,8 @@ GUI is fully usable with no adapter attached.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -39,6 +41,14 @@ from wildcat.gui.views.live_data_view import LiveDataView
 from wildcat.gui.views.programming_view import ProgrammingView
 
 
+def _repo_root() -> Path | None:
+    p = Path(__file__).resolve()
+    for parent in p.parents:
+        if (parent / ".git").exists():
+            return parent
+    return None
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -57,6 +67,9 @@ class MainWindow(QMainWindow):
 
         detect_btn = QPushButton("Detect Cables")
         detect_btn.clicked.connect(self._detect_cables)
+
+        push_log_btn = QPushButton("Push Log")
+        push_log_btn.clicked.connect(self._push_log)
 
         self._vin_edit = QLineEdit()
         self._vin_edit.setPlaceholderText("VIN (auto-decode)")
@@ -88,6 +101,7 @@ class MainWindow(QMainWindow):
         row1.addWidget(decode_btn)
         row1.addSpacing(12)
         row1.addWidget(self.connect_btn)
+        row1.addWidget(push_log_btn)
         row2 = QHBoxLayout()
         row2.addWidget(self.status_label)
         row2.addSpacing(12)
@@ -255,11 +269,34 @@ class MainWindow(QMainWindow):
         from datetime import datetime
 
         ts = datetime.now().strftime("%H:%M:%S")
-        self._log.append(f"[{ts}] {msg}")
+        line = f"[{ts}] {msg}"
+        self._log.append(line)
+        # persist to repo log file so it can be pushed to GitHub
+        root = _repo_root()
+        if root is not None:
+            log_dir = root / "logs"
+            log_dir.mkdir(exist_ok=True)
+            with (log_dir / "connection.log").open("a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
 
     def _purge_cables(self) -> None:
         self.log("Purged disconnected cable state")
         self.status_label.setText("Not connected")
+
+    def _push_log(self) -> None:
+        import subprocess
+
+        root = _repo_root()
+        if root is None:
+            self.log("Push Log: not a git checkout")
+            return
+        try:
+            subprocess.run(["git", "-C", str(root), "add", "logs/connection.log"], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(root), "commit", "-m", "log: connection session"], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(root), "push"], check=True, capture_output=True, text=True)
+            self.log("Pushed connection log to GitHub")
+        except subprocess.CalledProcessError as e:
+            self.log(f"Push Log failed: {e.stderr.strip() if e.stderr else e}")
 
     # ------------------------------------------------------------------ events
     def _toggle_connection(self) -> None:
