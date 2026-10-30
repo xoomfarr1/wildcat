@@ -71,6 +71,9 @@ class MainWindow(QMainWindow):
         push_log_btn = QPushButton("Push Log")
         push_log_btn.clicked.connect(self._push_log)
 
+        read_vin_btn = QPushButton("Read VIN")
+        read_vin_btn.clicked.connect(self._read_vin_from_car)
+
         self._vin_edit = QLineEdit()
         self._vin_edit.setPlaceholderText("VIN (auto-decode)")
         self._vin_edit.setMaxLength(17)
@@ -102,6 +105,7 @@ class MainWindow(QMainWindow):
         row1.addSpacing(12)
         row1.addWidget(self.connect_btn)
         row1.addWidget(push_log_btn)
+        row1.addWidget(read_vin_btn)
         row2 = QHBoxLayout()
         row2.addWidget(self.status_label)
         row2.addSpacing(12)
@@ -278,6 +282,71 @@ class MainWindow(QMainWindow):
             log_dir.mkdir(exist_ok=True)
             with (log_dir / "connection.log").open("a", encoding="utf-8") as fh:
                 fh.write(line + "\n")
+
+    def _read_vin_from_car(self) -> None:
+        if not self.connection.is_connected:
+            self.log("Read VIN: not connected")
+            return
+        conn = getattr(self.connection, "connector", None)
+        if conn is None:
+            self.log("Read VIN: no connector")
+            return
+        vin_str = None
+        try:
+            from wildcat.connectors.elm327 import Elm327Connector
+            from wildcat.connectors.serial import SerialConnector
+            from wildcat.diagnostics import obd2 as _obd2
+
+            if isinstance(conn, Elm327Connector):
+                vin_str = _obd2.read_vin(conn)
+            elif isinstance(conn, SerialConnector):
+                # UDS ReadDataByIdentifier 0xF190 (VIN)
+                try:
+                    conn.send(bytes([0x22, 0xF1, 0x90]))
+                    buf = bytearray()
+                    import time as _t
+
+                    deadline = _t.monotonic() + 1.0
+                    while _t.monotonic() < deadline:
+                        try:
+                            chunk = conn.recv(timeout=0.1)
+                        except Exception:  # noqa: BLE001
+                            chunk = b""
+                        if chunk:
+                            buf += chunk
+                            if b">" in buf:
+                                break
+                        else:
+                            _t.sleep(0.02)
+                    text = buf.decode("ascii", errors="replace")
+                    hexstr = "".join(c for c in text if c in "0123456789abcdefABCDEF")
+                    # response: 62 F1 90 <17 ASCII bytes>
+                    if hexstr.startswith("62F190"):
+                        payload = hexstr[6:]
+                        chars = []
+                        for i in range(0, len(payload) - 1, 2):
+                            try:
+                                b = int(payload[i : i + 2], 16)
+                            except ValueError:
+                                break
+                            if 32 <= b < 127:
+                                chars.append(chr(b))
+                        cand = "".join(chars).strip()
+                        if len(cand) == 17:
+                            vin_str = cand
+                except Exception:  # noqa: BLE001
+                    vin_str = None
+        except Exception as e:  # noqa: BLE001
+            self.log(f"Read VIN error: {e}")
+            return
+        if vin_str:
+            self._vin_edit.setText(vin_str)
+            self._on_decode_vin()
+            self.log(f"Read VIN from car: {vin_str}")
+            self.status_label.setText(f"VIN read from car: {vin_str}")
+        else:
+            self.log("Read VIN: no response / unsupported")
+            self.status_label.setText("Could not read VIN from car")
 
     def _purge_cables(self) -> None:
         self.log("Purged disconnected cable state")
