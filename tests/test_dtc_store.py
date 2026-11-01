@@ -66,8 +66,46 @@ def test_manufacturer_mercedes_gap_returns_none():
     assert store.lookup("ZZZZ9", manufacturer="Mercedes") is None
     # A code present in other manufacturers still resolves via documented fallback.
     assert store.lookup("P0301", manufacturer="Mercedes") is not None
+def test_overlay_bad_type_raises():
     try:
         DTCStore([1, 2, 3])
     except TypeError:
         return
     raise AssertionError("expected ValueError")
+
+
+def test_normalize_vw_five_digit():
+    store = DTCStore()
+    assert store.lookup("00001", manufacturer="Volkswagen") is not None
+
+
+def test_normalize_bmw_four_digit():
+    store = DTCStore()
+    assert store.lookup("0001", manufacturer="BMW") is not None
+
+
+def test_normalize_gm_stray_quote():
+    store = DTCStore()
+    assert store.normalize_code('"B1380') == "B1380"
+    assert store.lookup('"B1380', manufacturer="GM") is not None
+
+
+def test_code_only_fallback():
+    store = DTCStore()
+    assert store.lookup("P0301") is not None
+
+
+def test_unknown_code_returns_none():
+    store = DTCStore()
+    assert store.lookup("ZZZZ9") is None
+
+
+def test_mercedes_gap():
+    store = DTCStore()
+    assert store.lookup("ZZZZ9", manufacturer="Mercedes") is None
+
+
+def test_overlay_precedence():
+    store = DTCStore({"P0301": "Overlay text"})
+    assert store.lookup("P0301") == "Overlay text"
+    assert store.lookup("P0301", manufacturer="BMW") == "Overlay text"
