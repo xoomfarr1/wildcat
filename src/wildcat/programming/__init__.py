@@ -1,5 +1,10 @@
 """Programming module: security access, ECU identification, flash/calibration."""
-from .algorithms import NoAlgorithmConfiguredError, SecurityAlgorithmRegistry
+from .algorithms import (
+    NoAlgorithmConfiguredError,
+    SecurityAlgorithmRegistry,
+    SecurityProvider,
+    SecurityProviderRegistry,
+)
 from .flash import FlashUpdater
 from .flash_sequence import FlashResult, FlashSequence, FlashSequenceError
 from .identification import ECUIdentification
@@ -14,4 +19,6 @@ __all__ = [
     "NoAlgorithmConfiguredError",
     "SecurityAccess",
     "SecurityAlgorithmRegistry",
+    "SecurityProvider",
+    "SecurityProviderRegistry",
 ]
