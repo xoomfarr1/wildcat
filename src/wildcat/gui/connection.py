@@ -276,12 +276,17 @@ class ConnectionModel(QObject):
     def perform_security_access(self, key_id: bytes = b"\x00\x00\x00\x00") -> tuple[bytes, bytes]:
         """Run a full security-access (seed/key) exchange.
 
+        WARNING: This is a PLACEHOLDER.  It requests a seed and then sends
+        the seed back as the key (seed-as-key).  No real seed-to-key
+        algorithm is implemented; a real ECU will reject this.  Do not
+        present the returned key as a valid security key.  See
+        ``programming/algorithms.py`` for the plug-in interface.
+
         Args:
             key_id: The 4-byte key identifier sent to request the seed.
 
         Returns:
-            A ``(seed, key)`` tuple: the seed the ECU returned and the session
-            key the client replied with.
+            A ``(seed, key)`` tuple where ``key == seed`` (placeholder).
         """
         car = self.car
         if car is None:
