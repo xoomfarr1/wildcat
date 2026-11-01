@@ -74,3 +74,20 @@ Deferred (need CAN hardware / Rust toolchain / larger refactor):
 - Mercedes CBF diagnostic-container parsing (`rust/cbf_parser.rs`, `cbf_dtc.rs`) — requires Rust build; would give MercedesC300 real DTC descriptions.
 - J2534 passthru hardware abstraction (`rust/passthru_api.rs`) — only if a J2534 adapter is acquired.
 - `transport_interface.py` generalization — future refactor when CAN transport lands.
+
+## GenericDiagnosticTool study (jakka351/GenericDiagnosticTool)
+Studied for service-coverage and J2534 connector ideas.  Licence listed as
+"Other / no assertion" (not treated as open); the project also ships a
+security-access bruteforcer and OEM seed/key algorithms, which were NOT used.
+
+Used (concepts only; original Python implementation, no code ported):
+- UDS 0x23 ReadMemoryByAddress added to UDSService (standard ISO 14229).
+- protocol/discovery.py: discover_dids / discover_pids (standard 0x22 / 0x01 scan).
+
+Skipped (and why):
+- Security-access bruteforcer and all OEM seed/key algorithms: sensitive,
+  and unclear licence; would distribute OEM security secrets.
+- J2534 native interop: requires Windows DLL calls; not testable on this
+  Linux dev box and out of scope for the serial/K-line paths.
+- CAN sniffer: needs CAN hardware; deferred.
+- C# code: not ported (different language, unclear licence).

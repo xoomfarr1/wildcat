@@ -599,16 +599,32 @@ class UDSService:
             out.append({"name": name, "value": value, "unit": unit})
         return out
 
-    # --------------------------------------------------------------- helper -- #
-    def get_dtc_reader(self) -> list[dict]:
-        """Return the DTC reader handler.
+    def read_memory_by_address(self, address: int, size: int) -> bytes:
+        """Read memory by address (UDS service 0x23).
 
-        Wraps :meth:`read_dtc` so callers get the stored fault codes as a plain
-        list of dicts without touching the UDS service directly.
+        Sends ``[0x23, address_format, size_format, address..., size...]``
+        and returns the raw bytes the ECU returns.  Returns ``b""`` on a
+        negative/empty response rather than raising, so callers can probe
+        addresses without aborting a scan.
+
+        Args:
+            address: Start address to read from.
+            size: Number of bytes to read.
 
         Returns:
-            A list of DTC records.
+            The bytes returned by the ECU, or ``b""`` on failure.
         """
+        # address/size format: 4-byte address, 1-byte size (common default).
+        request = bytes([0x23, 0x41]) + address.to_bytes(4, "big") + bytes([size & 0xFF])
+        self.send(request)
+        response = self.recv(self.timeout)
+        if not response or response[0] != 0x63:
+            return b""
+        return response[2:]
+
+    # --------------------------------------------------------------- helper -- #
+    def get_dtc_reader(self) -> list[dict]:
+        """Return the DTC reader handler."""
         return self.read_dtc()
 
     # --------------------------------------------------------------- identity -- #
