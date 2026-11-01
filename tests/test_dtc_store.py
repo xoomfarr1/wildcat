@@ -5,10 +5,11 @@ from pathlib import Path
 from wildcat.diagnostics.dtc_store import DTCStore
 
 
-def test_generic_lookup():
+def test_generic_lookup_empty():
     store = DTCStore()
-    assert store.lookup("P0301") == "Cylinder 1 Misfire Detected"
-    assert store.lookup("p0301") == "Cylinder 1 Misfire Detected"
+    # No generic entries shipped (provenance unverified); all lookups None.
+    assert store.lookup("P0301") is None
+    assert store.known_codes() == []
 
 
 def test_unknown_returns_none():
@@ -27,7 +28,7 @@ def test_overlay_from_file():
         p.write_text(json.dumps({"P0420": "Custom catalyst text"}))
         store = DTCStore(str(p))
         assert store.lookup("P0420") == "Custom catalyst text"
-        assert store.lookup("P0301") == "Cylinder 1 Misfire Detected"
+        assert store.lookup("P0301") is None
 
 
 def test_overlay_bad_type_raises():
