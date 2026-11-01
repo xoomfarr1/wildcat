@@ -44,7 +44,28 @@ def test_overlay_from_file():
         assert store.lookup("P0301") is not None
 
 
-def test_overlay_bad_type_raises():
+def test_manufacturer_scoped_lookup_differs():
+    store = DTCStore()
+    # Same code, different manufacturer -> different description.
+    bmw = store.lookup("P1120", manufacturer="BMW")
+    ford = store.lookup("P1120", manufacturer="Ford")
+    assert bmw is not None and ford is not None
+    assert bmw != ford
+    # Code-only fallback returns one of them (first loaded).
+    assert store.lookup("P1120") is not None
+
+
+def test_manufacturer_unknown_returns_none():
+    store = DTCStore()
+    assert store.lookup("P9999ZZZ", manufacturer="BMW") is None
+
+
+def test_manufacturer_mercedes_gap_returns_none():
+    store = DTCStore()
+    # Mercedes has no bundled file: a code absent from all files is None regardless.
+    assert store.lookup("ZZZZ9", manufacturer="Mercedes") is None
+    # A code present in other manufacturers still resolves via documented fallback.
+    assert store.lookup("P0301", manufacturer="Mercedes") is not None
     try:
         DTCStore([1, 2, 3])
     except TypeError:
