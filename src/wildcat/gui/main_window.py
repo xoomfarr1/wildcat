@@ -270,9 +270,9 @@ class MainWindow(QMainWindow):
         self.log(f"Detected {len(cables)} cable(s): {summary}")
 
     def log(self, msg: str) -> None:
-        from datetime import datetime
+        from datetime import UTC, datetime
 
-        ts = datetime.now().strftime("%H:%M:%S")
+        ts = datetime.now(UTC).astimezone().strftime("%H:%M:%S")
         line = f"[{ts}] {msg}"
         self._log.append(line)
         # persist to repo log file so it can be pushed to GitHub

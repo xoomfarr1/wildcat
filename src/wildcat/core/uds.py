@@ -337,10 +337,10 @@ class UDSService:
         timeout: Default receive timeout in seconds.
     """
 
-    #: Default target ECU identifier (0x3E = read-data-by-identifier on many
-    #: platforms).  The identifier is determined *per car definition*; override
-    #: it for the target ECU if the vehicle uses a different one (e.g. 0x2E,
-    #: 0x2F, 0x10, 0x22).
+    #: Default target ECU identifier (0x3E = TesterPresent on standard UDS).
+    #: The identifier is determined *per car definition*; override it for the
+    #: target ECU if the vehicle uses a different one (e.g. 0x2E, 0x2F,
+    #: 0x10, 0x22).
     DEFAULT_ECU_ID = 0x3E
 
     def __init__(

@@ -108,4 +108,4 @@ class ProgrammingView(QWidget):
             return
         self.seed_label.setText(self._mask(seed))
         self.key_label.setText(self._mask(key))
-        self.status.setText("Security access granted (unverified — no independent confirmation)")
+        self.status.setText("Security access reported (unverified — no independent confirmation)")

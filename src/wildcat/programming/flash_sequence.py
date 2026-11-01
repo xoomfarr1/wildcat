@@ -51,7 +51,11 @@ class FlashSequence:
 
     def run(self, data: bytes, address: int = 0x00000000) -> FlashResult:
         result = FlashResult(ok=False)
-        # 1. Programming session
+        if not data:
+            result.steps.append("Input: FAIL (empty payload)")
+            result.error = "no data to flash"
+            return result
+        # 1. Programming session"""
         if not self._step("DiagnosticSessionControl(programming)", lambda: self._session_control(0x02), result):
             return result
         # 2. RequestDownload
@@ -106,7 +110,7 @@ class FlashSequence:
         # would compare the flashed image.  Here we just attempt the request.
         self.uds.send(bytes([0x22, 0xF1, 0x90]))
         resp = self.uds.recv(self.uds.timeout)
-        if not resp:
-            raise FlashSequenceError("verification read-back got no response")
+        if not resp or resp[0] != 0x62:
+            raise FlashSequenceError(f"verification read-back rejected: {resp!r}")
         # We cannot assert byte equality without a real read-back DID; record
-        # that verification is structural only.
+        # that verification is structural only."""

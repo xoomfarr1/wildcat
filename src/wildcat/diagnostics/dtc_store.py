@@ -40,13 +40,17 @@ class DTCStore:
     def __init__(self, overlay=None) -> None:
         self._generic: dict[str, str] = {}
         self._overlay: dict[str, str] = {}
-        # Load bundled user-supplied overlay data (Automotive-9/dtc-codes) if present.
+        self._scoped: dict[tuple[str, str], str] = {}
+        self._fallback: dict[str, str] = {}
         self._load_bundled()
         if overlay:
             self.load_overlay(overlay)
 
+    @staticmethod
+    def _norm_mfr(name) -> str:
+        return "".join(ch for ch in str(name).upper() if ch.isalnum())
+
     def _bundled_dir(self) -> Path | None:
-        # src/wildcat/data/dtc relative to this file
         p = Path(__file__).resolve().parent.parent / "data" / "dtc"
         if p.is_dir():
             return p
@@ -57,18 +61,21 @@ class DTCStore:
         if d is None:
             return
         for json_file in sorted(d.glob("*.json")):
+            manufacturer = self._norm_mfr(json_file.stem)
             try:
                 with json_file.open(encoding="utf-8") as fh:
                     data = json.load(fh)
                 if isinstance(data, dict):
                     for k, v in data.items():
-                        self._overlay[str(k).upper().strip().strip('"')] = str(v)
+                        code = str(k).upper().strip().strip('"')
+                        desc = str(v)
+                        self._scoped[(manufacturer, code)] = desc
+                        if code not in self._fallback:
+                            self._fallback[code] = desc
             except (OSError, ValueError, json.JSONDecodeError):
-                # Skip unreadable files; never crash construction.
                 continue
 
     def load_overlay(self, overlay) -> None:
-        """Load a user-supplied mapping (dict or path/JSON)."""
         if isinstance(overlay, (str, Path)):
             with open(overlay, encoding="utf-8") as fh:
                 data = json.load(fh)
@@ -79,11 +86,19 @@ class DTCStore:
         for k, v in data.items():
             self._overlay[str(k).upper()] = str(v)
 
-    def lookup(self, code: str) -> str | None:
+    def lookup(self, code: str, manufacturer=None) -> str | None:
         code = code.upper().strip()
         if code in self._overlay:
             return self._overlay[code]
+        if manufacturer is not None:
+            key = (self._norm_mfr(manufacturer), code)
+            if key in self._scoped:
+                return self._scoped[key]
+        if code in self._fallback:
+            return self._fallback[code]
         return self._generic.get(code)
 
     def known_codes(self) -> list[str]:
-        return sorted(set(self._generic) | set(self._overlay))
+        codes = set(self._generic) | set(self._overlay) | set(self._fallback)
+        codes |= {c for (_, c) in self._scoped}
+        return sorted(codes)
