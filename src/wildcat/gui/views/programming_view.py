@@ -1,10 +1,10 @@
 """Programming tab — ECU identification and security access.
 
-Drives the shared :class:`~wildcat.gui.connection.ConnectionModel` to identify
-the connected ECU and run a security-access (seed/key) exchange for flashing.
-The actual ECU flashing lives in ``programming/flash.py`` (out of scope here):
-this tab only proves the seed/key handshake succeeds so the flasher can
-proceed once its driver is wired up.
+This tab is an *information + security-access handshake* view only.  It does
+NOT flash or calibrate an ECU: no RequestDownload/TransferData/RequestTransferExit,
+chunking, checksum or verification is implemented (see ``programming/flash.py``,
+which is a scaffold).  The security-access exchange below proves the seed/key
+handshake succeeds so a real flasher can proceed once its driver is wired up.
 """
 from __future__ import annotations
 
@@ -67,6 +67,15 @@ class ProgrammingView(QWidget):
         connection.connected.connect(self._on_connected)
         connection.disconnected.connect(self._on_disconnected)
 
+    # ------------------------------------------------------------------ helpers
+    @staticmethod
+    def _mask(value: bytes) -> str:
+        """Show only the last 4 hex chars; mask the rest."""
+        hexed = value.hex()
+        if len(hexed) <= 4:
+            return "*" * len(hexed)
+        return "*" * (len(hexed) - 4) + hexed[-4:]
+
     # ------------------------------------------------------------------ events
     def _on_connected(self, _car) -> None:
         """Populate ECU info as soon as a session comes up."""
@@ -97,6 +106,6 @@ class ProgrammingView(QWidget):
         except WildcatError as exc:
             self.status.setText(str(exc))
             return
-        self.seed_label.setText(seed.hex())
-        self.key_label.setText(key.hex())
-        self.status.setText("Unlocked")
+        self.seed_label.setText(self._mask(seed))
+        self.key_label.setText(self._mask(key))
+        self.status.setText("Security access granted (unverified — no independent confirmation)")

@@ -400,7 +400,16 @@ class UDSService:
 
     # ------------------------------------------------------- security access #
     def send_seed(self, seed: bytes) -> bytes:
-        """Ask the ECU for a security seed (SBC SID 0x27).
+        """Ask the ECU for a security seed (UDS SecurityAccess, SID 0x27).
+
+        NOTE: This uses SID 0x27 for the seed request and SID 0x29 for the
+        key response.  Standard ISO 14229 UDS defines only 0x27
+        (SecurityAccess); 0x29 is not a standard UDS service.  This is a
+        project-specific convention that has NOT been validated against a
+        real vehicle or a published spec.  Do not "correct" it to textbook
+        0x27/0x67 without a spec or a real-vehicle log.  "SBC" in older
+        notes referred to Mercedes Sensotronic Brake Control and was a
+        misnomer for the UDS SecurityAccess service.
 
         The request is the UDS ``RequestSeed``: ``[0x27, PS, key_id...]`` where
         ``PS`` is the seed length.  The ECU replies with the 4-byte seed; this

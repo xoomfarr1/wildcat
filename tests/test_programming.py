@@ -13,7 +13,19 @@ def test_security_access_roundtrip():
     assert seed == bytes([1, 2, 3, 4])
 
 
-def test_flash_updater():
+def test_flash_updater_no_target():
     fu = FlashUpdater()
+    assert fu.flash(b"abc") is False
+    assert fu.calibrate(b"def") is False
+
+
+def test_flash_updater_with_target():
+    from wildcat.core.uds import UDSService, VirtualUDSConnector
+
+    conn = VirtualUDSConnector()
+    conn.open()
+    uds = UDSService(conn, ecu_id=0x12, security_access=True)
+    fu = FlashUpdater(uds=uds)
     assert fu.flash(b"abc") is True
     assert fu.calibrate(b"def") is True
+    assert conn.bytes_sent > 0
