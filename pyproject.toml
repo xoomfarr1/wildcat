@@ -1,26 +1,35 @@
-[tool.poetry]
+[project]
 name = "wildcat-diagnostics"
 version = "0.1.0"
 description = "Multi-connector, multi-vehicle diagnostic and programming toolchain"
-authors = ["Zach Monroe"]
-license = "GPL-3.0"
+authors = [{ name = "Zach Monroe" }]
+license = { text = "GPL-3.0" }
 readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "pyserial>=3.5",
+    "requests>=2.31",
+    "loguru>=0.7",
+    "PySide6>=6.7",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-pydantic = "^2.7"
-pyserial = "^3.5"
-requests = "^2.31"
-loguru = "^0.7"
-PySide6 = "^6.7"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.2"
-pytest-cov = "^5.0"
-ruff = "^0.4"
-mypy = "^1.8"
-odxtools = "^11.7"  # dev-only: reverse-engineer Mercedes/ODX diagnostic sessions (snoop/decode); not a production dep
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "mypy>=1.8",
+    "odxtools>=11.7",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

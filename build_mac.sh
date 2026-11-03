@@ -9,17 +9,14 @@ cd "$(dirname "$0")"
 #   DEBUG=1 ./build_mac.sh  -> console build that prints the startup traceback
 DEBUG="${DEBUG:-0}"
 
-# Create venv if missing.
-if [ ! -d .venv ]; then
-    python3 -m venv .venv
+# Ensure uv is available.
+if ! command -v uv >/dev/null 2>&1; then
+    echo "uv not found; installing via pip..." >&2
+    python3 -m pip install --quiet uv
 fi
 
-# Activate venv.
-source .venv/bin/activate
-
-# Upgrade pip and install project with gui + dev extras.
-python -m pip install --upgrade pip
-python -m pip install ".[gui,dev]"
+# Create/sync venv with uv (uses uv.lock for reproducibility).
+uv sync --extra dev
 
 # Build standalone macOS app bundle.
 COMMON=(
@@ -37,7 +34,7 @@ COMMON=(
 if [ "$DEBUG" = "1" ]; then
     # Keep a console so a startup crash prints its traceback instead of just
     # flashing the logo and exiting.
-    python -m PyInstaller --console "${COMMON[@]}"
+    uv run python -m PyInstaller --console "${COMMON[@]}"
 else
-    python -m PyInstaller --windowed "${COMMON[@]}"
+    uv run python -m PyInstaller --windowed "${COMMON[@]}"
 fi
