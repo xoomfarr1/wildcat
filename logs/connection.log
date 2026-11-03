@@ -2,3 +2,5 @@
 [22:56:18] Connected via Virtual (simulated)
 [22:56:23] Pushed connection log to GitHub
 [22:56:23] Read VIN: no connector
+[22:56:28] Pushed connection log to GitHub
+[22:56:33] Detected 3 cable(s): /dev/cu.wlan-debug (n/a); /dev/cu.debug-console (n/a); /dev/cu.Bluetooth-Incoming-Port (n/a)
